@@ -1,6 +1,9 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable react/prop-types */
-import { useState } from 'react'
 
+import { useState } from 'react'
+import { useField } from './hooks'
 import {
   Routes, Route, Link, useParams, useNavigate
 } from 'react-router-dom'
@@ -66,41 +69,48 @@ const Footer = () => (
 )
 
 const CreateNew = (props) => {
-  const [content, setContent] = useState('')
-  const [author, setAuthor] = useState('')
-  const [info, setInfo] = useState('')
+  const navigate = useNavigate()
 
-const navigate = useNavigate()
-
+  const { reset: resetContent ,...allContent} = useField('content')
+  const { reset: resetAuthor ,...allAuthor} = useField('author')
+  const { reset: resetInfo ,...information} = useField('info')
+ 
   const handleSubmit = (e) => {
     e.preventDefault()
     props.addNew({
-      content,
-      author,
-      info,
+      content: allContent.value,
+      author: allAuthor.value,  
+      info: information.value,
       votes: 0
     })
     navigate('/')
   }
 
+  const handleReset = () => {
+    resetContent()
+    resetAuthor()
+    resetInfo()
+  }
+
   return (
     <div>
-      <h2>create a new anecdote</h2>
+      <h2>create new anecdote</h2>
       <form onSubmit={handleSubmit}>
         <div>
           content
-          <input name='content' value={content} onChange={(e) => setContent(e.target.value)} />
+          <input {...allContent} />
         </div>
         <div>
           author
-          <input name='author' value={author} onChange={(e) => setAuthor(e.target.value)} />
+          <input {...allAuthor} />
         </div>
         <div>
-          url for more info
-          <input name='info' value={info} onChange={(e)=> setInfo(e.target.value)} />
+          for more info
+          <input {...information} />
         </div>
         <button>create</button>
       </form>
+      <button onClick={handleReset}>reset</button>
     </div>
   )
 
