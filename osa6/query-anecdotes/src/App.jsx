@@ -1,19 +1,47 @@
 import AnecdoteForm from './components/AnecdoteForm'
 import Notification from './components/Notification'
+import { useQuery, useMutation, useQueryClient } from 'react-query'
+import { getAnecdotes, updateVote } from './request'
+import { useNotificationDispatch } from './notificationContext'
 
 const App = () => {
+  const queryClient = useQueryClient()
+  const dispatch = useNotificationDispatch()
 
+  const updateVoteMutation = useMutation(updateVote, {
+    onSuccess: () => {
+      queryClient.invalidateQueries('anecdotes')
+    }
+  })
+  
   const handleVote = (anecdote) => {
-    console.log('vote')
+    updateVoteMutation.mutate({...anecdote, votes: anecdote.votes + 1})
+    dispatch({ type: 'showNotification', payload: `anecdote '${anecdote.content}' voted` })
+    setTimeout(() => {
+      dispatch({ type: 'hideNotification' })
+    }, 5000)
   }
 
-  const anecdotes = [
+  
+  const result = useQuery(
+    'anecdotes',
+    getAnecdotes,
     {
-      "content": "If it hurts, do it more often",
-      "id": "47145",
-      "votes": 0
-    },
-  ]
+      retry: 1,
+      refetchOnWindowFocus: false
+    }
+  )
+  console.log(result)
+
+  if ( result.isLoading ) {
+        return <div>loading data...</div>
+  }
+
+  if ( result.isError ) {
+    return <div>anecdote service not avaiable due to problems in server</div>
+}
+
+const anecdotes = result.data
 
   return (
     <div>
@@ -36,5 +64,6 @@ const App = () => {
     </div>
   )
 }
+
 
 export default App

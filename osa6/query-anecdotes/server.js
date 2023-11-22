@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 import jsonServer from 'json-server'
 
 const server = jsonServer.create()
