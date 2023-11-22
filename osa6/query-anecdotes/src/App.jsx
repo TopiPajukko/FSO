@@ -32,13 +32,12 @@ const App = () => {
     }
   )
   console.log(result)
-
   if ( result.isLoading ) {
         return <div>loading data...</div>
   }
 
   if ( result.isError ) {
-    return <div>anecdote service not avaiable due to problems in server</div>
+    return <div>anecdote service not available</div>
 }
 
 const anecdotes = result.data
