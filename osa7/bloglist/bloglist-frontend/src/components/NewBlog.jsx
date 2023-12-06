@@ -1,77 +1,81 @@
-import { useState } from "react";
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { createBlog } from '../request'
+import { useNotificationDispatch } from '../notificationContext'
+import {  Form, Button } from 'react-bootstrap'
 
-const NewBlog = ({ newBlog }) => {
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [url, setUrl] = useState("");
+const NewBlog = () => {
+  const queryClient = useQueryClient()
 
-  const handleTitleChange = (event) => {
-    setTitle(event.target.value);
-  };
+  const dispatch = useNotificationDispatch()
 
-  const handleAuthorChange = (event) => {
-    setAuthor(event.target.value);
-  };
+  const newBlogMutation = useMutation({ mutationFn: createBlog,
+    onSuccess: (newBlog) => {
+      const blogs = queryClient.getQueryData('blogs')
+      queryClient.setQueryData('blogs', blogs.concat(newBlog) )
+    },
+    onError: () => {
+      dispatch({ type: 'showNotification', payload: 'fail to create the blog' })
+      setTimeout(() => {
+        dispatch({ type: 'hideNotification' })
+      }, 5000)
+    }
+  })
 
-  const handleUrlChange = (event) => {
-    setUrl(event.target.value);
-  };
+  const addBlog = async (event) => {
+    event.preventDefault()
 
-  const addBlog = (event) => {
-    event.preventDefault();
-    newBlog({
-      title: title,
-      author: author,
-      url: url,
-    });
-    setTitle("");
-    setAuthor("");
-    setUrl("");
-  };
+    const title = event.target.title.value
+    const author = event.target.author.value
+    const url = event.target.url.value
+
+    event.target.title.value = ''
+    event.target.author.value = ''
+    event.target.url.value = ''
+
+    newBlogMutation.mutate({ title, author, url })
+    console.log('new blog')
+
+    await dispatch({ type: 'showNotification', payload: `You added ${title} by ${author} !` })
+
+    setTimeout(() => {
+      dispatch({ type: 'hideNotification' })
+    }, 5000)
+  }
 
   return (
     <div>
       <h2>create new</h2>
-      <form onSubmit={addBlog}>
-        <div>
-          <p>title:</p>
-          <input
-            type="text"
-            value={title}
-            name="Title"
-            onChange={handleTitleChange}
-            placeholder="write title here"
-            id="title"
-          />
-        </div>
-        <div>
-          <p>author:</p>
-          <input
-            type="text"
-            value={author}
-            name="Author"
-            onChange={handleAuthorChange}
-            placeholder="write author here"
-            id="author"
-          />
-        </div>
-        <div>
-          <p>url:</p>
-          <input
-            type="url"
-            value={url}
-            name="url"
-            onChange={handleUrlChange}
-            placeholder="write url here"
-            id="url"
-          />
-        </div>
-        <button type="submit" id="create-button">
-          create
-        </button>
-      </form>
+      <Form onSubmit={addBlog}>
+        <Form.Group>
+          <div>
+            <Form.Label> title:</Form.Label>
+            <input
+              type="text"
+              name="title"
+              placeholder='write title here'
+            />
+          </div>
+          <div>
+            <Form.Label> Author:</Form.Label>
+            <input
+              type="text"
+              name="author"
+              placeholder='write author here'
+            />
+          </div>
+          <div>
+            <Form.Label> Url:</Form.Label>
+            <input
+              type="url"
+              name="url"
+              placeholder='write url here'
+            />
+          </div>
+          <Button type="submit" id='create-button'>create</Button>
+        </Form.Group>
+      </Form>
     </div>
-  );
-};
+  )
+}
 
-export default NewBlog;
+export default NewBlog

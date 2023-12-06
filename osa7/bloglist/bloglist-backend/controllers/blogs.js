@@ -1,18 +1,17 @@
 const blogRouter = require('express').Router()
 const Blog = require ('../models/blog')
+const Comment = require('../models/comment')
 
 blogRouter.get('/', async (request, response) => {
 	const blogs = await Blog.find({}).populate('user',{username: 1, name: 1, id: 1})
+  
+  // .populate({
+  //   path: 'comments',
+  //   select: 'content', 
+  // })
+  
 	response.json(blogs)
 }) 
-
-// blogRouter.get('/', (request, response) => {
-//   Blog
-//     .find({})
-//     .then(blogs => {
-//       response.json(blogs)
-//     })
-// })
 
   blogRouter.get('/:id', async (request, response) => {
 	  const blog = await Blog.findById(request.params.id)
@@ -73,6 +72,32 @@ blogRouter.put('/:id', async (request, response) => {
   
 	await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
 	response.json(blog)
+  })
+
+ blogRouter.get("/:id/comments", async (request, response) => {
+    const comments = await Comment.find({ blogs: request.params.id });
+    response.json(comments);
+  })
+
+  blogRouter.post("/:id/comments", async (request, response) => {
+    const body = request.body;
+  
+    const blog = await Blog.findById(request.params.id)
+
+    console.log('comment blog', blog)
+
+    const comment = new Comment({
+      content: body.content,
+      blogs: blog._id
+    })
+  
+    if (body.content === undefined) {
+      response.status(400).end();
+    } else {
+      const savedComment = await comment.save();
+
+      response.status(201).json(savedComment);
+    }
   })
 
 module.exports = blogRouter

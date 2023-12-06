@@ -1,149 +1,165 @@
-/* eslint-disable semi */
 /* eslint-disable quotes */
-import { useState, useEffect, useRef } from "react";
-import Blog from "./components/Blog";
-import Notification from "./components/Notification";
-import blogService from "./services/blogs";
-import loginService from "./services/login";
-import NewBlog from "./components/NewBlog";
-import Togglable from "./components/Togglable";
+import { useEffect, useRef, useContext } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import Blog from './components/Blog'
+import Notification from './components/Notification'
+import loginService from './services/login'
+import NewBlog from './components/NewBlog'
+import Togglable from './components/Togglable'
+import { useNotificationDispatch } from './notificationContext'
+import UserContext from './userContext'
+import { getBlogs, setToken } from './request'
+import UsersInfo from './components/UsersInfo'
+import { Routes, Route } from 'react-router-dom'
+import SingleUser from './components/SingleUser'
+import SingleBlog from './components/SingleBlog'
+import { Link } from 'react-router-dom'
+import { Nav, Navbar, Form, Button } from 'react-bootstrap'
 
 const App = () => {
-  const [blogs, setBlogs] = useState([]);
-  const [user, setUser] = useState(null);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [refreshBlog, setRefreshBlog] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState(null);
-  const [changeMessage, setChangeMessage] = useState(null);
-  const blogFormRef = useRef();
+
+  const padding = {
+    padding: 5
+  }
+
+  const [user, userDispatch] = useContext(UserContext)
+  const dispatch = useNotificationDispatch()
+  const blogFormRef = useRef()
 
   useEffect(() => {
-    blogService.getAll().then((blogs) => {
-      blogs.sort((a, b) => b.likes - a.likes);
-      setBlogs(blogs);
-    });
-  }, [refreshBlog]);
-
-  useEffect(() => {
-    const loggedUserJSON = window.localStorage.getItem("loggedBloglistUser");
-    if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON);
-      setUser(user);
-      blogService.setToken(user.token);
+    const loggedUser = window.localStorage.getItem('loggedUser')
+    if (loggedUser) {
+      const user = JSON.parse(loggedUser)
+      userDispatch({ type: 'setUser', payload: user })
+      setToken(user.token)
     }
-  }, []);
+  }, [])
+
 
   const handleLogin = async (event) => {
-    event.preventDefault();
+    event.preventDefault()
+
+    const username = event.target.username.value
+    const password = event.target.password.value
+    event.target.username.value = ''
+    event.target.password.value = ''
 
     try {
       const user = await loginService.login({
-        username,
-        password,
-      });
+        username, password,
+      })
 
-      window.localStorage.setItem("loggedBloglistUser", JSON.stringify(user));
+      window.localStorage.setItem(
+        'loggedUser', JSON.stringify(user)
+      )
 
-      blogService.setToken(user.token);
-      setUser(user);
-      setUsername("");
-      setPassword("");
+      setToken(user.token)
+      userDispatch({ type: 'setUser', payload: user })
     } catch (exception) {
-      setNotificationMessage("Wrong username or password");
+      dispatch({ type: 'showNotification', payload: 'Wrong username or password' })
       setTimeout(() => {
-        setNotificationMessage(null);
-      }, 5000);
+        dispatch({ type: 'hideNotification' })
+      }, 5000)
     }
-  };
+  }
 
   const handleLogout = () => {
-    window.localStorage.clear();
-    setUser(null);
-  };
+    window.localStorage.clear()
+    userDispatch({ type: 'clearUser' })
+  }
 
-  const addBlog = (blogObj) => {
-    blogFormRef.current.toggleVisibility();
-    blogService.create(blogObj).then((returnedBlog) => {
-      setBlogs(blogs.concat(returnedBlog));
-      setChangeMessage(
-        `a new blog ${blogObj.title} by ${blogObj.author} added`,
-      );
-      setRefreshBlog(!refreshBlog);
-      setTimeout(() => {
-        setChangeMessage(null);
-      }, 5000);
-    });
-  };
+  const result = useQuery({
+    queryKey: ['blogs'],
+    queryFn: getBlogs,
+    options:
+    {
+      retry: 1,
+      refetchOnWindowFocus: false
+    }
+  })
+  console.log('1111', result)
 
-  const addLikes = async (id, blogObject) => {
-    await blogService.update(id, blogObject);
-    setRefreshBlog(!refreshBlog);
-  };
+  if( result.isLoading ){
+    return <div>loading data...</div>
+  }
 
-  const deleteBlog = async (id) => {
-    await blogService.remove(id);
-    setRefreshBlog(!refreshBlog);
-  };
+  if( result.isError ){
+    return<div>blog service not available due to problem in server</div>
+  }
+
+  const blogs = result.data
+
+  const Home = () => {
+    return (
+      <div id="content">
+        <Togglable buttonLabel="create new blog" ref={blogFormRef}>
+          <NewBlog />
+        </Togglable>
+
+        <h2>blogs</h2>
+        {blogs.map(blog =>
+          <p key={blog.id}>
+            <Link to={`/blogs/${blog.id}`}> {blog.title}</Link> </p>
+        )}
+      </div>
+    )
+  }
 
   if (user === null) {
     return (
       <div>
-        <h2>Log in to application</h2>
-        <Notification message={notificationMessage} className={"error"} />
-        <form onSubmit={handleLogin}>
-          <div>
-            <p>username</p>
-            <input
+        <h2>login</h2>
+        <Notification className="error" />
+        <Form onSubmit={handleLogin}>
+          <Form.Group>
+            <Form.Label>username:</Form.Label>
+            <Form.Control
               type="text"
-              value={username}
-              name="Username"
-              onChange={({ target }) => setUsername(target.value)}
-              id="username"
+              name="username"
             />
-          </div>
-          <div>
-            <p>password</p>
-            <input
+            <Form.Label>password:</Form.Label>
+            <Form.Control
               type="password"
-              value={password}
-              name="Password"
-              onChange={({ target }) => setPassword(target.value)}
-              id="password"
+              name="password"
             />
-          </div>
-          <button type="submit" id="login-button">
+            <Button variant="primary" type="submit">
             login
-          </button>
-        </form>
+            </Button>
+          </Form.Group>
+        </Form>
       </div>
-    );
+    )
   }
 
   return (
-    <div>
-      <h2>blogs</h2>
-      <Notification message={changeMessage} className={"success"} />
-      <p> {user.name} logged in </p>
-      <button type="submit" onClick={handleLogout}>
-        logout
-      </button>
+    <div className="container">
 
-      <Togglable buttonLabel="create new blog" ref={blogFormRef}>
-        <NewBlog newBlog={addBlog} />
-      </Togglable>
-
-      {blogs.map((blog) => (
-        <Blog
-          key={blog.id}
-          blog={blog}
-          addLikes={addLikes}
-          deleteBlog={deleteBlog}
-          user={user}
-        />
-      ))}
+      <div id='navbar'>
+        <Navbar collapseOnSelect expand="lg" bg="light" variant="light">
+          <Navbar.Toggle aria-controls="responsive-navbar-nav" />
+          <Navbar.Collapse id="responsive-navbar-nav">
+            <Nav className="mr-auto">
+              <Nav.Link href="#" as="span">
+                <Link style={padding} to="/">home</Link>
+              </Nav.Link>
+              <Nav.Link href="#" as="span">
+                <Link style={padding} to="/users">users</Link>
+              </Nav.Link>
+            </Nav>
+          </Navbar.Collapse>
+          <p>{user.name} logged in </p>
+          <Button type="submit" onClick={handleLogout}>Logout</Button>
+        </Navbar>
+      </div>
+      <Notification className="success"/>
+      <Routes>
+        <Route path='/' element={<Home/>} />
+        <Route path='/users' element={<UsersInfo/>} />
+        <Route path="/users/:id" element={<SingleUser />} />
+        <Route path="/blogs/:id" element={<SingleBlog blogs={blogs}/>} />
+      </Routes>
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App

@@ -1,13 +1,3 @@
-.notification {
-  color: orange;
-  background: lightgrey;
-  font-size: 20px;
-  border-style: solid;
-  border-radius: 5px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
 .success {
   color: green;
   background: lightgrey;
@@ -25,4 +15,34 @@
   border-radius: 5px;
   padding: 10px;
   margin-bottom: 10px;
+}
+
+body {
+  background-color: rgb(232, 232, 232);
+}
+
+.container #navbar ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+.container #navbar p {
+  margin: 0;
+  margin-right: 10px;
+}
+
+.container #navbar {
+  padding: 5px;
+  margin: 5px;
+}
+
+.container {
+  margin-top: 10px;
+  max-width: 1200px;
+  border: 2px solid black;
+}
+
+#content {
+  padding: 5px;
+  margin: 5px;
 }
