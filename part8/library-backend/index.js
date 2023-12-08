@@ -100,13 +100,13 @@ let books = [
 const typeDefs = `
   type Author {
     name: String!
-    born: Int
+    born: String
     bookCount: Int
   }
 
   type Book {
     title: String!
-    published: Int!
+    published: String!
     author: String!
     id: String!
     genres: [String!]!
@@ -116,10 +116,10 @@ const typeDefs = `
     addBook(
       title: String!
       author: String!
-      published: Int!
+      published: String!
       genres: [String!]!
       ): Book
-      editAuthor(name: String!, setBornTo: Int!): Author
+      editAuthor(name: String!, setBornTo: String!): Author
   }
 
   type Query {
